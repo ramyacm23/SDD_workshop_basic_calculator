@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const HISTORY_STORAGE_KEY = "basic-calculator-history";
 
 const buttons = [
   { label: "C", action: "clear", kind: "muted" },
   { label: "DEL", action: "delete", kind: "muted" },
-  { label: "÷", action: "operator", value: "/", kind: "accent" },
-  { label: "×", action: "operator", value: "*", kind: "accent" },
+  { label: "/", action: "operator", value: "/", kind: "accent" },
+  { label: "*", action: "operator", value: "*", kind: "accent" },
   { label: "7", action: "digit" },
   { label: "8", action: "digit" },
   { label: "9", action: "digit" },
@@ -62,14 +64,57 @@ function formatDisplay(value) {
   return `${formattedWhole}.${decimal}`;
 }
 
+function isHistoryEntry(entry) {
+  return (
+    entry &&
+    typeof entry === "object" &&
+    typeof entry.id === "string" &&
+    typeof entry.left === "string" &&
+    typeof entry.right === "string" &&
+    typeof entry.operator === "string" &&
+    typeof entry.result === "string"
+  );
+}
+
+function getStoredHistory() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!storedValue) {
+      return [];
+    }
+
+    const parsedValue = JSON.parse(storedValue);
+    return Array.isArray(parsedValue) ? parsedValue.filter(isHistoryEntry) : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatHistoryExpression(entry) {
+  return `${formatDisplay(entry.left)} ${entry.operator} ${formatDisplay(entry.right)}`;
+}
+
 export default function App() {
   const [currentValue, setCurrentValue] = useState("0");
   const [previousValue, setPreviousValue] = useState("");
   const [operator, setOperator] = useState("");
   const [overwrite, setOverwrite] = useState(false);
+  const [history, setHistory] = useState(getStoredHistory);
 
   const expression =
     previousValue && operator ? `${formatDisplay(previousValue)} ${operator}` : "";
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+    } catch {
+      // Ignore storage errors so the calculator keeps working normally.
+    }
+  }, [history]);
 
   function resetCalculator() {
     setCurrentValue("0");
@@ -89,6 +134,18 @@ export default function App() {
 
     setCurrentValue(result);
     setOverwrite(true);
+  }
+
+  function addHistoryEntry(left, right, currentOperator, result) {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      left,
+      right,
+      operator: currentOperator,
+      result,
+    };
+
+    setHistory((existingHistory) => [entry, ...existingHistory]);
   }
 
   function handleDigit(value) {
@@ -159,7 +216,12 @@ export default function App() {
       return;
     }
 
-    const result = calculate(previousValue, currentValue, operator);
+    const leftValue = previousValue;
+    const rightValue = currentValue;
+    const currentOperator = operator;
+    const result = calculate(leftValue, rightValue, currentOperator);
+
+    addHistoryEntry(leftValue, rightValue, currentOperator, result);
     updateWithResult(result);
     setPreviousValue("");
     setOperator("");
@@ -212,30 +274,63 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <section className="calculator-card" aria-label="Calculator">
-        <div className="calculator-header">
-          <p className="eyebrow">React + Vite</p>
-          <h1>Calculator</h1>
-        </div>
+      <div className="calculator-layout">
+        <section className="calculator-card" aria-label="Calculator">
+          <div className="calculator-header">
+            <p className="eyebrow">React + Vite</p>
+            <h1>Calculator</h1>
+          </div>
 
-        <div className="display-panel">
-          <div className="expression">{expression || " "}</div>
-          <div className="display">{formatDisplay(currentValue)}</div>
-        </div>
+          <div className="display-panel">
+            <div className="expression">{expression || " "}</div>
+            <div className="display">{formatDisplay(currentValue)}</div>
+          </div>
 
-        <div className="button-grid">
-          {buttons.map((button) => (
+          <div className="button-grid">
+            {buttons.map((button) => (
+              <button
+                key={button.label}
+                type="button"
+                className={`calc-button ${button.kind || ""} ${button.className || ""}`.trim()}
+                onClick={() => handleButtonPress(button)}
+              >
+                {button.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="history-card" aria-label="Calculation history">
+          <div className="history-header">
+            <div>
+              <p className="eyebrow">Saved locally</p>
+              <h2>History</h2>
+            </div>
+
             <button
-              key={button.label}
               type="button"
-              className={`calc-button ${button.kind || ""} ${button.className || ""}`.trim()}
-              onClick={() => handleButtonPress(button)}
+              className="clear-history-button"
+              onClick={() => setHistory([])}
+              disabled={history.length === 0}
             >
-              {button.label}
+              Clear history
             </button>
-          ))}
-        </div>
-      </section>
+          </div>
+
+          {history.length > 0 ? (
+            <ul className="history-list">
+              {history.map((entry) => (
+                <li key={entry.id} className="history-item">
+                  <span className="history-expression">{formatHistoryExpression(entry)}</span>
+                  <span className="history-result">= {formatDisplay(entry.result)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="history-empty">Your completed calculations will show up here.</p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

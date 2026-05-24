@@ -40,8 +40,13 @@ select {
   padding: 24px;
 }
 
-.calculator-card {
+.calculator-layout {
   width: min(100%, 420px);
+  display: grid;
+  gap: 18px;
+}
+
+.calculator-card {
   border-radius: 24px;
   padding: 24px;
   background: rgba(255, 255, 255, 0.82);
@@ -149,6 +154,85 @@ select {
   grid-row: span 2;
 }
 
+.history-card {
+  border-radius: 24px;
+  padding: 20px 24px 24px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 42px rgba(42, 72, 110, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.clear-history-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #dfe9f4;
+  color: #34506e;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.clear-history-button:hover:enabled {
+  background: #d2e0ee;
+}
+
+.clear-history-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(237, 243, 249, 0.9);
+}
+
+.history-expression {
+  color: #35506c;
+  word-break: break-word;
+}
+
+.history-result {
+  color: #132238;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.history-empty {
+  margin: 0;
+  color: #4f6b8f;
+}
+
 @media (max-width: 480px) {
   .app-shell {
     padding: 16px;
@@ -157,6 +241,22 @@ select {
   .calculator-card {
     padding: 18px;
     border-radius: 20px;
+  }
+
+  .history-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .history-header,
+  .history-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .clear-history-button,
+  .history-result {
+    align-self: flex-start;
   }
 
   .calc-button {
